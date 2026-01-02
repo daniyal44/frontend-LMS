@@ -42,7 +42,7 @@ const Message = ({ message, type, onClose }) => (
   </div>
 );
 
-// Modal Component
+// Modal Component (only for forgot password now)
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
@@ -93,16 +93,30 @@ const PasswordStrength = ({ strength }) => {
 const AuthIllustration = ({ type }) => {
   if (type === 'signup') {
     return (
-      <div>
+      <div> </div>
+    );
+  } else if (type === 'verification') {
+    return (
+      <div className="relative w-full h-48 mb-6 flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-2xl"></div>
+        <div className="relative z-10 text-center">
+          <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center shadow-lg">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">Verify Your Email</h3>
+          <p className="text-gray-600 text-sm mt-2">Enter the code sent to your email</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="relative w-full h-48 mb-6 flex items-center justify-center">
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-2xl"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-2xl"></div>
       <div className="relative z-10 text-center">
-        <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center shadow-lg">
+        <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
           <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
@@ -117,7 +131,8 @@ const AuthIllustration = ({ type }) => {
 // Input field component (supports forwarded ref)
 const InputField = React.forwardRef(({
   id, label, type, value, onChange, placeholder, error,
-  showPasswordToggle = false, onTogglePassword, passwordVisible = false
+  showPasswordToggle = false, onTogglePassword, passwordVisible = false,
+  disabled = false
 }, ref) => (
   <div>
     <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
@@ -129,11 +144,12 @@ const InputField = React.forwardRef(({
         type={type}
         id={id}
         className={`w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition duration-200 ${error ? 'border-red-300' : 'border-gray-300'
-          } ${showPasswordToggle ? 'pr-12' : ''}`}
+          } ${showPasswordToggle ? 'pr-12' : ''} ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''}`}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         required
+        disabled={disabled}
       />
       {showPasswordToggle && (
         <button
@@ -153,34 +169,29 @@ InputField.displayName = 'InputField';
 
 // API Configuration function
 const getApiBaseUrl = () => {
-  // 1. runtime-injected value
   if (typeof window !== 'undefined' && window.__REACT_APP_API_BASE_URL__) {
     let url = String(window.__REACT_APP_API_BASE_URL__).trim().replace(/\/+$/, '');
     if (!url.endsWith('/api')) url = `${url}/api`;
     return url;
   }
 
-  // 2. build-time env var (CRA/Vite style)
   if (typeof process !== 'undefined' && process && process.env && process.env.REACT_APP_API_BASE_URL && String(process.env.REACT_APP_API_BASE_URL).trim() !== '') {
     let url = String(process.env.REACT_APP_API_BASE_URL).trim().replace(/\/+$/, '');
     if (!url.endsWith('/api')) url = `${url}/api`;
     return url;
   }
 
-  // 3. development fallback
   if (typeof process !== 'undefined' && process && process.env && process.env.NODE_ENV === 'development') {
     const backendPort = process.env.REACT_APP_BACKEND_PORT ? String(process.env.REACT_APP_BACKEND_PORT) : '5000';
     const url = `http://localhost:${backendPort}/api`;
     return url;
   }
 
-  // 4. production same-origin
   if (typeof window !== 'undefined') {
     const url = `${window.location.origin}/api`;
     return url;
   }
 
-  // 5. final fallback
   return 'http://localhost:5000/api';
 };
 
@@ -194,7 +205,6 @@ const SocialLoginButtons = () => {
     } else if (provider === 'facebook') {
       window.location.href = `${API_BASE_URL}/auth/facebook`;
     } else {
-      // For other providers that might not be implemented yet
       alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not available yet.`);
     }
   };
@@ -229,27 +239,6 @@ const SocialLoginButtons = () => {
           <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
         </svg>
       )
-    },
-    {
-      id: 'microsoft',
-      label: 'Continue with Microsoft',
-      icon: (
-        <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="#f25022" d="M1 1h10v10H1z"/>
-          <path fill="#00a4ef" d="M13 1h10v10H13z"/>
-          <path fill="#7fba00" d="M1 13h10v10H1z"/>
-          <path fill="#ffb900" d="M13 13h10v10H13z"/>
-        </svg>
-      )
-    },
-    {
-      id: 'apple',
-      label: 'Continue with Apple',
-      icon: (
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M14.94 5.19A4.38 4.38 0 0 0 16 2a4.44 4.44 0 0 0-3 1.52 4.17 4.17 0 0 0-1 3.09 3.69 3.69 0 0 0 2.94-1.42zm2.52 7.44a4.51 4.51 0 0 1 2.16-3.81 4.66 4.66 0 0 0-3.66-2c-1.56-.16-3 .91-3.83.91s-2-.89-3.3-.87a4.92 4.92 0 0 0-4.14 2.53C2.93 12.45 4.24 17 6 19.47c.8 1.21 1.8 2.58 3.12 2.53s1.75-.76 3.28-.76 2 .76 3.3.73 2.22-1.24 3.06-2.45a11 11 0 0 0 1.38-2.85 4.41 4.41 0 0 1-2.68-4.04z"/>
-        </svg>
-      )
     }
   ];
 
@@ -278,9 +267,8 @@ const AuthForm = () => {
   
   // State management
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeForm, setActiveForm] = useState('signup');
+  const [activeForm, setActiveForm] = useState('signup'); // 'login', 'signup', 'verification'
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
   const [messages, setMessages] = useState([]);
   const [pendingVerification, setPendingVerification] = useState(null);
 
@@ -417,7 +405,9 @@ const AuthForm = () => {
 
   // Initialize component
   useEffect(() => {
-    setCaptcha(generateCaptcha());
+    if (activeForm !== 'verification') {
+      setCaptcha(generateCaptcha());
+    }
 
     // Check for remembered user (only email, not password)
     try {
@@ -432,14 +422,14 @@ const AuthForm = () => {
     } catch (e) {
       console.warn('Error parsing remembered user:', e);
     }
-  }, []);
+  }, [activeForm]);
 
-  // Focus verification input when modal opens
+  // Focus verification input when verification form is active
   useEffect(() => {
-    if (showVerification) {
+    if (activeForm === 'verification') {
       setTimeout(() => verificationInputRef.current?.focus(), 50);
     }
-  }, [showVerification]);
+  }, [activeForm]);
 
   // Focus password when switching to login form
   useEffect(() => {
@@ -450,10 +440,12 @@ const AuthForm = () => {
 
   // Reset forms when switching between login/signup
   useEffect(() => {
-    setCaptcha(generateCaptcha());
-    setCaptchaInput('');
-    setSignupCaptchaInput('');
-    setFormErrors({});
+    if (activeForm === 'login' || activeForm === 'signup') {
+      setCaptcha(generateCaptcha());
+      setCaptchaInput('');
+      setSignupCaptchaInput('');
+      setFormErrors({});
+    }
   }, [activeForm]);
 
   // Toggle Password Visibility
@@ -599,7 +591,6 @@ const AuthForm = () => {
       if (rememberMe) {
         localStorage.setItem('rememberedUser', JSON.stringify({
           email: loginData.email
-          // NEVER store password in localStorage
         }));
         localStorage.setItem('authToken', token);
       } else {
@@ -634,8 +625,13 @@ const AuthForm = () => {
         password: signupData.password
       });
 
-      setPendingVerification({ email: signupData.email });
-      setShowVerification(true);
+      setPendingVerification({ 
+        email: signupData.email,
+        name: signupData.name.trim()
+      });
+      
+      // Redirect to verification form instead of showing modal
+      setActiveForm('verification');
       showMessage('Account created! Please check your email for verification code.', 'success');
     } catch (error) {
       // Error handled in apiCall
@@ -652,33 +648,33 @@ const AuthForm = () => {
       return;
     }
 
+    if (!verificationCode.trim()) {
+      showMessage('Please enter the verification code', 'error');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const verifiedEmail = pendingVerification.email;
-
       await apiCall(API_ROUTES.VERIFY_EMAIL, 'POST', {
-        email: verifiedEmail,
+        email: pendingVerification.email,
         code: verificationCode
       });
 
-      // close modal and clear verification state
-      setShowVerification(false);
+      // Clear verification state and redirect to login
       setPendingVerification(null);
       setVerificationCode('');
 
-      // prefill login email for convenience
-      if (verifiedEmail) {
-        setLoginData(prev => ({ ...prev, email: verifiedEmail }));
-      }
+      // Prefill login email for convenience
+      setLoginData(prev => ({ ...prev, email: pendingVerification.email }));
 
-      showMessage('Email verified successfully! Redirecting to login...', 'success');
+      showMessage('Email verified successfully! You can now login with your account.', 'success');
 
-      // switch to login form and focus password input
+      // Switch to login form and focus password input
       setTimeout(() => {
         setActiveForm('login');
         setTimeout(() => loginPasswordRef.current?.focus(), 200);
-      }, 800);
+      }, 1500);
     } catch (error) {
       // Error handled in apiCall
     } finally {
@@ -734,6 +730,12 @@ const AuthForm = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const goBackToSignup = () => {
+    setPendingVerification(null);
+    setVerificationCode('');
+    setActiveForm('signup');
   };
 
   // Render Login Form
@@ -937,7 +939,7 @@ const AuthForm = () => {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-700 hover:to-teal-700 transition duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
       >
         {isSubmitting ? 'Creating Account...' : 'Create Account'}
       </button>
@@ -951,6 +953,85 @@ const AuthForm = () => {
             onClick={() => setActiveForm('login')}
           >
             Sign In
+          </button>
+        </p>
+      </div>
+    </form>
+  );
+
+  // Render Verification Form
+  const renderVerificationForm = () => (
+    <form onSubmit={handleVerificationSubmit} className="space-y-6">
+      <AuthIllustration type="verification" />
+
+      <div className="text-center mb-4">
+        <p className="text-gray-600">
+          We've sent a verification code to{' '}
+          <strong className="text-purple-600">{pendingVerification?.email}</strong>.
+          Please enter the code below to verify your email address.
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          Check your inbox (and spam folder) for the email.
+        </p>
+      </div>
+
+      <InputField
+        id="verification-code"
+        label="Verification Code"
+        type="text"
+        ref={verificationInputRef}
+        value={verificationCode}
+        onChange={(e) => setVerificationCode(e.target.value)}
+        placeholder="Enter 6-digit verification code"
+      />
+
+      <div className="flex space-x-4">
+        <button
+          type="button"
+          onClick={goBackToSignup}
+          className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition duration-200 shadow-sm"
+        >
+          Back to Signup
+        </button>
+        
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? 'Verifying...' : 'Verify Email'}
+        </button>
+      </div>
+
+      <div className="text-center mt-4">
+        <p className="text-sm text-gray-600">
+          Didn't receive the code?{' '}
+          <button
+            type="button"
+            className="text-purple-600 hover:text-purple-800 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={resendVerificationCode}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Resending...' : 'Resend Code'}
+          </button>
+        </p>
+      </div>
+
+      <div className="relative flex items-center my-6">
+        <div className="flex-grow border-t border-gray-300"></div>
+        <span className="flex-shrink mx-4 text-gray-600 text-sm">Need help?</span>
+        <div className="flex-grow border-t border-gray-300"></div>
+      </div>
+
+      <div className="text-center">
+        <p className="text-sm text-gray-600">
+          Having trouble?{' '}
+          <button
+            type="button"
+            className="text-purple-600 hover:text-purple-800 font-medium transition-colors duration-200"
+            onClick={() => setActiveForm('login')}
+          >
+            Contact Support
           </button>
         </p>
       </div>
@@ -997,65 +1078,6 @@ const AuthForm = () => {
     </Modal>
   );
 
-  // Render Verification Modal
-  const renderVerificationModal = () => (
-    <Modal
-      isOpen={showVerification}
-      onClose={() => {
-        setShowVerification(false);
-        setPendingVerification(null);
-      }}
-      title="Verify Your Email"
-    >
-      <div className="text-center mb-4">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-100 to-teal-100 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-        </div>
-      </div>
-
-      <p className="text-gray-600 mb-6 text-center">
-        We've sent a verification code to <strong className="text-purple-600">{pendingVerification?.email}</strong>.
-        Please enter the code below to verify your email address.
-      </p>
-
-      <form onSubmit={handleVerificationSubmit} className="space-y-4">
-        <InputField
-          id="verification-code"
-          label="Verification Code"
-          type="text"
-          ref={verificationInputRef}
-          value={verificationCode}
-          onChange={(e) => setVerificationCode(e.target.value)}
-          placeholder="Enter verification code"
-        />
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? 'Verifying...' : 'Verify Email'}
-        </button>
-      </form>
-
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-600">
-          Didn't receive the code?{' '}
-          <button
-            type="button"
-            className="text-purple-600 hover:text-purple-800 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={resendVerificationCode}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Resending...' : 'Resend Code'}
-          </button>
-        </p>
-      </div>
-    </Modal>
-  );
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-4 relative overflow-hidden">
       {/* Background decorative elements */}
@@ -1070,40 +1092,48 @@ const AuthForm = () => {
         {/* Auth Form Container */}
         <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/30">
           {/* Logo/Header */}
-                <div className="text-center mb-2">
-                <img 
-                  src="https://i.postimg.cc/zDFwVm0R/a_3d_render_of_a_sleek_logo_displaying_t_WRu_g5NXRt6KYp_FGOq_b_Lw_16RSYne_RDW8XD5oo3lm_JA.jpg" 
-                  alt="MDK Service Logo"
-                  className="w-16 h-16 mx-auto mb-4 object-contain"
-                />
-                <h1 className="text-3xl font-bold text-gray-800">
-                  {activeForm === 'login' ? 'Welcome Back' : 'MDK Service'}
-                </h1>
-                <p className="text-gray-600 mt-2">
-                  {activeForm === 'login'
-                  ? 'Sign in to continue to your account'
-                  : 'Create your account to get started'}
-                </p>
-                </div>
+          <div className="text-center mb-6">
+            <img 
+              src="https://i.postimg.cc/zDFwVm0R/a_3d_render_of_a_sleek_logo_displaying_t_WRu_g5NXRt6KYp_FGOq_b_Lw_16RSYne_RDW8XD5oo3lm_JA.jpg" 
+              alt="MDK Service Logo"
+              className="w-16 h-16 mx-auto mb-4 object-contain"
+            />
+            <h1 className="text-3xl font-bold text-gray-800">
+              {activeForm === 'login' ? 'Welcome Back' : 
+               activeForm === 'signup' ? 'MDK Service' : 
+               'Verify Your Account'}
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {activeForm === 'login' ? 'Sign in to continue to your account' :
+               activeForm === 'signup' ? 'Create your account to get started' :
+               'Enter the verification code sent to your email'}
+            </p>
+          </div>
 
-                {/* Render the appropriate form */}
-          {activeForm === 'login' ? renderLoginForm() : renderSignupForm()}
+          {/* Render the appropriate form */}
+          {activeForm === 'login' ? renderLoginForm() : 
+           activeForm === 'signup' ? renderSignupForm() : 
+           renderVerificationForm()}
         </div>
 
-        {/* Terms notice */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-white/80">
-            By creating an account or continuing with Google, you agree to Terms & Conditions {' '}
-            <a href="#" className="underline hover:text-white transition-colors">Terms & Conditions</a>{' '}
-            and <a href="#" className="underline hover:text-white transition-colors">Privacy Policy</a>
+        {/* Footer */}
+        <div className="text-center mt-6 text-white/80 text-sm">
+          <p>© {new Date().getFullYear()} MDK Service. All rights reserved.</p>
+          <p className="mt-1">
+            {activeForm === 'verification' && (
+              <button
+                onClick={() => setActiveForm('login')}
+                className="underline hover:text-white transition-colors duration-200"
+              >
+                Back to Login
+              </button>
+            )}
           </p>
-            
         </div>
       </div>
 
       {/* Modals */}
       {renderForgotPasswordModal()}
-      {renderVerificationModal()}
 
       {/* Success/Error Messages */}
       <div className="fixed top-4 right-4 z-50 max-w-sm w-full space-y-2">
@@ -1121,3 +1151,7 @@ const AuthForm = () => {
 };
 
 export default AuthForm;
+
+
+
+

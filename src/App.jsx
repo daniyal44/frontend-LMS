@@ -11,11 +11,15 @@ import AuthForm from './pages/AuthForm'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/AccountSetting'
 import Billing from './pages/Billing'
-import Portfolio from './pages/portfolio'
 import Complaint from './pages/Complaint'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import Google from './pages/Google'
+import WebDevPage from './pages/WebDevPage'
+import AiIntegrationPage from './pages/AIIntegration'
+import UXDesign from './pages/UXDesign'
+import DigitalMarketingPage from './pages/Digitalmarket'
+import WorkPage from './pages/WorkPage'
 
 function App() {
   return (
@@ -30,11 +34,15 @@ function App() {
           <Route path="/authform" element={<AuthForm />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/complaint" element={<Complaint />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/google" element={<Google />} />
+          <Route path="/webdevpage" element={<WebDevPage />} />
+          <Route path="/aiintegrationpage" element={<AiIntegrationPage />} />
+          <Route path="/uxdesign" element={<UXDesign />} />
+          <Route path="/digitalmarket" element={<DigitalMarketingPage />} />
+          <Route path="/workpage" element={<WorkPage />} />
         </Routes>
       </BrowserRouter>
     </div>
@@ -42,3 +50,5 @@ function App() {
 }
 
 export default App
+
+

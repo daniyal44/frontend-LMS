@@ -116,7 +116,7 @@ function Navbar() {
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/about', label: 'About', icon: '👥' },
     { path: '/services', label: 'Services', icon: '⚡' },
-    { path: '/portfolio', label: 'Portfolio', icon: '💼' },
+    
     { path: '/contact', label: 'Contact', icon: '📞' },
     { path: '/complaint', label: 'Complaint', icon: '📝' }
   ];
@@ -373,3 +373,4 @@ function Navbar() {
 }
 
 export default Navbar;
+

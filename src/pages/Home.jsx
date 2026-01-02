@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Rocket, Code, Brain, BarChart3, Globe, Shield,
   ArrowRight, CheckCircle, Zap, MessageSquare,
@@ -10,30 +10,69 @@ import Navbar from './Navbar';
 function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
+  const [intendedPath, setIntendedPath] = useState(null);
 
-  // Navigation & Auth guarding
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const auth = localStorage.getItem('isAuthenticated');
     return auth === '1' || auth === 'true';
   });
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [intendedPath, setIntendedPath] = useState(null);
-  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
+
+  // Service routes mapping
+  const serviceRoutes = {
+    'Web Development': '/webdevpage',
+    'AI Integration': '/aiintegrationpage',
+    'UI/UX Design': '/uxdesign',
+    'Digital Marketing': '/digitalmarket'
+  };
+
+  // Company routes mapping
+  const companyRoutes = {
+    'About Us': '/about',
+    'Careers': '/careers',
+    'Case Studies': '/workpage',
+    'Contact': '/contact'
+  };
+
+  // Services data
+  const services = [
+    { icon: Brain, title: 'AI Automation', desc: 'LLM integration, Chatbots, and automated workflows that save 100+ hours/month.' },
+    { icon: Code, title: 'Full-Stack Dev', desc: 'React, Node.js, and Python architectures built for speed and scalability.' },
+    { icon: BarChart3, title: 'Data Analytics', desc: 'Turn raw data into actionable insights with custom dashboarding.' },
+    { icon: Globe, title: 'SEO & Marketing', desc: 'Technical SEO and programmatic content generation strategies.' },
+    { icon: Shield, title: 'Cyber Security', desc: 'Enterprise-grade security protocols to protect your digital assets.' },
+    { icon: Zap, title: 'Rapid Prototyping', desc: 'From concept to MVP in weeks, not months.' },
+  ];
+
+  const processSteps = [
+    { title: "Discovery & Strategy", text: "We dive deep into your business logic to architect a solution that fits." },
+    { title: "Agile Development", text: "Bi-weekly sprints with deliverables you can test and provide feedback on." },
+    { title: "AI Integration", text: "Injecting intelligence into the core of your product for automation." },
+    { title: "Launch & Scale", text: "CI/CD pipelines setup for zero-downtime deployment and scaling." }
+  ];
+
+  const technologies = ['React', 'Next.js', 'Node.js', 'Python', 'TensorFlow', 'AWS'];
 
   useEffect(() => {
     const handleStorage = () => {
       const auth = localStorage.getItem('isAuthenticated');
       setIsAuthenticated(auth === '1' || auth === 'true');
     };
-    window.addEventListener('storage', handleStorage);
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
 
     // Show account prompt after 7 seconds
     const promptTimer = setTimeout(() => {
-      if (!isAuthenticated) setShowAccountPrompt(true);
+      if (!isAuthenticated) {
+        setShowAccountPrompt(true);
+      }
     }, 7000);
 
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('storage', handleStorage);
     window.addEventListener('scroll', handleScroll);
 
     return () => {
@@ -53,6 +92,11 @@ function Home() {
     }
   };
 
+  const handleServiceNavigate = (serviceName) => {
+    const path = serviceRoutes[serviceName] || '/services';
+    handleNavigate(path);
+  };
+
   const goToLogin = () => {
     setShowAuthModal(false);
     setShowAccountPrompt(false);
@@ -62,7 +106,7 @@ function Home() {
   const goToSignup = () => {
     setShowAuthModal(false);
     setShowAccountPrompt(false);
-    navigate('/authform');
+    navigate('/authform', { state: { mode: 'signup' } });
   };
 
   const goToAuthForm = () => {
@@ -81,26 +125,6 @@ function Home() {
       navigate('/dashboard');
     }
   };
-
-  const services = [
-    { icon: Brain, title: 'AI Automation', desc: 'LLM integration, Chatbots, and automated workflows that save 100+ hours/month.' },
-    { icon: Code, title: 'Full-Stack Dev', desc: 'React, Node.js, and Python architectures built for speed and scalability.' },
-    { icon: BarChart3, title: 'Data Analytics', desc: 'Turn raw data into actionable insights with custom dashboarding.' },
-    { icon: Globe, title: 'SEO & Marketing', desc: 'Technical SEO and programmatic content generation strategies.' },
-    { icon: Shield, title: 'Cyber Security', desc: 'Enterprise-grade security protocols to protect your digital assets.' },
-    { icon: Zap, title: 'Rapid Prototyping', desc: 'From concept to MVP in weeks, not months.' },
-  ];
-
-  const processSteps = [
-    { title: "Discovery & Strategy", text: "We dive deep into your business logic to architect a solution that fits." },
-    { title: "Agile Development", text: "Bi-weekly sprints with deliverables you can test and provide feedback on." },
-    { title: "AI Integration", text: "Injecting intelligence into the core of your product for automation." },
-    { title: "Launch & Scale", text: "CI/CD pipelines setup for zero-downtime deployment and scaling." }
-  ];
-
-  const footerServices = ['Web Development', 'AI Integration', 'UI/UX Design', 'Digital Marketing'];
-  const footerCompany = ['About Us', 'Careers', 'Case Studies', 'Contact'];
-  const technologies = ['React', 'Next.js', 'Node.js', 'Python', 'TensorFlow', 'AWS'];
 
   return (
     <div className="min-h-screen bg-[#0B0F19] text-white font-sans selection:bg-teal-500/30 overflow-x-hidden">
@@ -148,7 +172,7 @@ function Home() {
               </span>
             </button>
             <button
-              onClick={() => handleNavigate('/portfolio')}
+              onClick={() => handleNavigate('/workpage')}
               className="group px-6 md:px-8 py-3 md:py-4 bg-slate-800/50 border border-slate-700 hover:border-purple-500/50 text-white font-semibold rounded-xl backdrop-blur-md transition-all duration-300 hover:scale-105 w-full sm:w-auto"
             >
               View Our Work
@@ -305,8 +329,12 @@ function Home() {
             <div>
               <h4 className="text-white font-bold mb-4 md:mb-6 text-lg">Services</h4>
               <ul className="space-y-2 md:space-y-3 text-slate-400">
-                {footerServices.map(item => (
-                  <li key={item} className="hover:text-teal-400 cursor-pointer transition-colors text-sm md:text-base" onClick={() => handleNavigate('/services')}>
+                {Object.keys(serviceRoutes).map(item => (
+                  <li 
+                    key={item} 
+                    className="hover:text-teal-400 cursor-pointer transition-colors text-sm md:text-base" 
+                    onClick={() => handleServiceNavigate(item)}
+                  >
                     {item}
                   </li>
                 ))}
@@ -316,8 +344,12 @@ function Home() {
             <div>
               <h4 className="text-white font-bold mb-4 md:mb-6 text-lg">Company</h4>
               <ul className="space-y-2 md:space-y-3 text-slate-400">
-                {footerCompany.map(item => (
-                  <li key={item} className="hover:text-teal-400 cursor-pointer transition-colors text-sm md:text-base" onClick={() => navigate(`/${item.toLowerCase().replace(' ', '-')}`)}>
+                {Object.keys(companyRoutes).map(item => (
+                  <li 
+                    key={item} 
+                    className="hover:text-teal-400 cursor-pointer transition-colors text-sm md:text-base" 
+                    onClick={() => navigate(companyRoutes[item])}
+                  >
                     {item}
                   </li>
                 ))}
@@ -342,8 +374,8 @@ function Home() {
           <div className="border-t border-slate-800 pt-6 md:pt-8 flex flex-col md:flex-row justify-between items-center text-slate-500 text-xs md:text-sm">
             <p>&copy; {new Date().getFullYear()} MDK Agency. All rights reserved.</p>
             <div className="flex gap-4 md:gap-6 mt-4 md:mt-0">
-              <span className="cursor-pointer hover:text-white">Privacy Policy</span>
-              <span className="cursor-pointer hover:text-white">Terms of Service</span>
+              <Link to="/privacy" className="cursor-pointer hover:text-white">Privacy Policy</Link>
+              <Link to="/terms" className="cursor-pointer hover:text-white">Terms of Service</Link>
             </div>
           </div>
         </div>
@@ -402,11 +434,6 @@ function Home() {
                 </button>
                 <button onClick={goToSignup} className="py-3 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors text-sm md:text-base">
                   Sign Up
-                </button>
-              </div>
-              <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-slate-800">
-                <button onClick={demoLogin} className="text-xs md:text-sm text-slate-500 hover:text-slate-300 underline decoration-dotted">
-                  Use Demo Access (Developer Mode)
                 </button>
               </div>
             </div>

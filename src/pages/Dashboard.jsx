@@ -5,12 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 
 // Dynamic import for Chart.js
-let Chart;
-try {
-  Chart = require('chart.js/auto').default;
-} catch (error) {
-  console.warn('Chart.js not available, charts will be disabled');
-}
+
 
 // Component imports (would normally be in separate files)
 const StatsCard = ({ title, value, icon, color, change, subtitle, onClick }) => (
