@@ -154,7 +154,7 @@ export default function Billing() {
   });
 
   const [errors, setErrors] = useState({});
-  const API_BASE = window._API_BASE || import.meta?.env?.VITE_API_BASE || 'http://localhost:5000';
+  const API_BASE = window._API_BASE || import.meta?.env?.VITE_API_BASE || 'http://localhost:4000';
 
   useEffect(() => {
     let mounted = true;

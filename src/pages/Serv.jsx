@@ -352,7 +352,7 @@ export default function Services() {
     try {
       pushToast('Creating order and redirecting to payment...', 'info', 3000);
       const API_BASE = window._API_BASE || '';
-      const DEFAULT_API_BASE = import.meta?.env?.VITE_API_BASE || 'http://localhost:5000';
+      const DEFAULT_API_BASE = import.meta?.env?.VITE_API_BASE || 'http://localhost:4000';
       const BASE = API_BASE || DEFAULT_API_BASE;
       const res = await fetch(`${BASE}/api/orders`, {
         method: 'POST',
