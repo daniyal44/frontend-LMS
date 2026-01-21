@@ -38,12 +38,12 @@ function Home() {
 
   // Services data
   const services = [
-    { icon: Brain, title: 'AI Automation', desc: 'LLM integration, Chatbots, and automated workflows that save 100+ hours/month.' },
-    { icon: Code, title: 'Full-Stack Dev', desc: 'React, Node.js, and Python architectures built for speed and scalability.' },
-    { icon: BarChart3, title: 'Data Analytics', desc: 'Turn raw data into actionable insights with custom dashboarding.' },
-    { icon: Globe, title: 'SEO & Marketing', desc: 'Technical SEO and programmatic content generation strategies.' },
-    { icon: Shield, title: 'Cyber Security', desc: 'Enterprise-grade security protocols to protect your digital assets.' },
-    { icon: Zap, title: 'Rapid Prototyping', desc: 'From concept to MVP in weeks, not months.' },
+    { icon: Brain, title: 'AI Automation', desc: 'LLM integration, Chatbots, and automated workflows that save 100+ hours/month.', price: 299, rating: 4.8, reviews: 128 },
+    { icon: Code, title: 'Full-Stack Dev', desc: 'React, Node.js, and Python architectures built for speed and scalability.', price: 1499, rating: 4.9, reviews: 86 },
+    { icon: BarChart3, title: 'Data Analytics', desc: 'Turn raw data into actionable insights with custom dashboarding.', price: 749, rating: 4.7, reviews: 54 },
+    { icon: Globe, title: 'SEO & Marketing', desc: 'Technical SEO and programmatic content generation strategies.', price: 499, rating: 4.6, reviews: 210 },
+    { icon: Shield, title: 'Cyber Security', desc: 'Enterprise-grade security protocols to protect your digital assets.', price: 1299, rating: 4.5, reviews: 38 },
+    { icon: Zap, title: 'Rapid Prototyping', desc: 'From concept to MVP in weeks, not months.', price: 399, rating: 4.4, reviews: 64 },
   ];
 
   const processSteps = [
@@ -206,22 +206,39 @@ function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {services.map((service, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleNavigate('/services')}
-                className="group relative p-6 md:p-8 rounded-2xl bg-slate-800/20 border border-slate-700/50 hover:bg-slate-800/40 hover:border-teal-500/30 transition-all duration-300 cursor-pointer overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="relative z-10">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 border border-slate-600">
-                    <service.icon className="w-5 h-5 md:w-6 md:h-6 text-teal-400" />
+              <div key={idx} className="group relative rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer">
+                <div className="p-6 md:p-8">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center text-teal-600 border border-slate-100">
+                        <service.icon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg md:text-xl font-semibold text-slate-900">{service.title}</h3>
+                        <p className="text-sm text-slate-500 mt-1 max-w-md">{service.desc}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-slate-500">Starting at</div>
+                      <div className="text-lg font-bold text-slate-900">${service.price}</div>
+                    </div>
                   </div>
-                  <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 text-white group-hover:text-teal-300 transition-colors">
-                    {service.title}
-                  </h3>
-                  <p className="text-slate-400 leading-relaxed text-sm md:text-base">
-                    {service.desc}
-                  </p>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <div className="flex items-center text-yellow-400">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`w-4 h-4 ${i < Math.round(service.rating) ? 'text-yellow-400' : 'text-slate-200'}`} />
+                        ))}
+                      </div>
+                      <div className="text-slate-500">{service.rating} · {service.reviews} reviews</div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => handleNavigate('/services')} className="px-4 py-2 bg-teal-500 text-white rounded-md text-sm font-medium">View</button>
+                      <button onClick={() => handleNavigate('/contact')} className="px-3 py-2 border border-slate-200 text-sm rounded-md text-slate-700">Request</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -371,6 +388,27 @@ function Home() {
             </div>
           </div>
 
+          {/* Center Hero Search - marketplace style */}
+          <div className="mt-8 animate-fade-in-up delay-350 px-4">
+            <form onSubmit={(e) => { e.preventDefault(); const q = e.target.search?.value || ''; if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`; }} className="max-w-3xl mx-auto">
+              <div className="flex items-stretch bg-white rounded-full shadow-lg overflow-hidden">
+                <select name="category" className="px-4 text-sm text-slate-600 border-r border-slate-200 bg-transparent outline-none">
+                  <option value="all">All Categories</option>
+                  <option value="design">Design</option>
+                  <option value="dev">Development</option>
+                  <option value="marketing">Marketing</option>
+                </select>
+                <input name="search" aria-label="hero-search" className="flex-1 px-4 py-3 text-sm text-slate-700" placeholder="Search gigs, services, or keywords (e.g. 'Landing page, SEO')" />
+                <button className="px-5 bg-teal-500 text-white font-semibold rounded-r-full">Find Services</button>
+              </div>
+            </form>
+            <div className="mt-3 flex flex-wrap justify-center gap-3 text-sm text-slate-400">
+              <span className="px-3 py-1 bg-slate-800/40 rounded-full">UI/UX Design</span>
+              <span className="px-3 py-1 bg-slate-800/40 rounded-full">React Development</span>
+              <span className="px-3 py-1 bg-slate-800/40 rounded-full">AI Automation</span>
+              <span className="px-3 py-1 bg-slate-800/40 rounded-full">SEO</span>
+            </div>
+          </div>
           <div className="border-t border-slate-800 pt-6 md:pt-8 flex flex-col md:flex-row justify-between items-center text-slate-500 text-xs md:text-sm">
             <p>&copy; {new Date().getFullYear()} MDK Agency. All rights reserved.</p>
             <div className="flex gap-4 md:gap-6 mt-4 md:mt-0">

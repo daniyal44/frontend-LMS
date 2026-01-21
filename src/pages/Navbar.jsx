@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 function Navbar() {
@@ -9,8 +9,20 @@ function Navbar() {
   const [screenSize, setScreenSize] = useState('desktop');
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
+    // load cart count from localStorage and listen for cross-tab updates
+    try {
+      const stored = localStorage.getItem('mdk_cart');
+      if (stored) setCartCount(JSON.parse(stored).length || 0);
+    } catch (e) {}
+    const onStorage = (e) => {
+      if (e.key === 'mdk_cart') {
+        try { setCartCount(JSON.parse(e.newValue || '[]').length || 0); } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', onStorage);
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
@@ -71,6 +83,7 @@ function Navbar() {
     return () => {
       window.removeEventListener('scroll', throttledScroll);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('storage', onStorage);
     };
   }, [lastScrollY]);
 
@@ -146,227 +159,183 @@ function Navbar() {
 
   const visibleNavItems = getVisibleNavItems();
 
+  // Search state + debounce
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchTimer = useRef(null);
+
+  const handleSearchChange = (e) => {
+    const v = e.target.value;
+    setSearchQuery(v);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    // Debounce preview search or analytics
+    searchTimer.current = setTimeout(() => {
+      // lightweight: could call an autocomplete API here
+      // For now just keep it local-friendly
+      // console.debug('search preview:', v);
+    }, 350);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!searchQuery || searchQuery.trim() === '') return;
+    // Navigate to search results page (simple behaviour)
+    window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+  };
+
+  // Dynamic styles depending on scroll
+  const bgClass = isScrolled ? 'bg-white shadow-md' : 'bg-transparent';
+  const textColorClass = isScrolled ? 'text-slate-800' : 'text-white';
   return (
     <div>
-      <nav className={`fixed w-full z-50 transition-all duration-500 ease-in-out ${
-        isVisible ? 'translate-y-0' : '-translate-y-full'
-      } ${
-        isScrolled ? 'bg-slate-900/95 backdrop-blur-lg shadow-xl py-1' : 'bg-transparent py-3'
-      }`}>
-        <div className="max-w-[100vw] px-2 sm:px-4 lg:px-6 xl:px-8 2xl:px-10">
-          <div className="flex justify-between items-center">
-            {/* Logo and Sidebar Toggle */}
-            <div className="flex items-center flex-shrink-0">
-              <button
-                id="sidebar-toggle"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="mr-2 sm:mr-3 p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-purple-800/50 transition-all duration-200"
-                aria-label="Toggle sidebar"
-              >
-                <div className="w-5 h-5 sm:w-6 sm:h-6 relative">
-                  <span className="absolute left-0 top-1 w-full h-0.5 bg-current transition-all"></span>
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-current transition-all"></span>
-                  <span className="absolute left-0 bottom-1 w-full h-0.5 bg-current transition-all"></span>
-                </div>
-              </button>
-              
-              <div className="flex-shrink-0">
-                <Link 
-                  to="/" 
-                  className="text-lg sm:text-xl lg:text-2xl font-bold text-white hover:scale-105 transition-transform duration-200"
+      <nav className={`fixed w-full z-50 transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <div className={`w-full ${bgClass} transition-colors duration-300 ${textColorClass}`}> 
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              {/* Left: Logo + Categories toggle */}
+              <div className="flex items-center gap-3">
+                <button
+                  id="sidebar-toggle"
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  className="p-2 rounded-md text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition"
+                  aria-label="Toggle sidebar"
                 >
-                  <span className="bg-gradient-to-r from-teal-400 to-purple-400 bg-clip-text text-transparent">
-                    MDK Agency
-                  </span>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+
+                <Link to="/" className="flex items-center gap-3 group" aria-label="MDK Agency">
+                  <div className="w-9 h-9 bg-gradient-to-r from-teal-400 to-purple-500 rounded-md flex items-center justify-center text-white font-bold">M</div>
+                  <div className="hidden md:block">
+                    <div className="text-lg font-semibold text-slate-800">MDK Agency</div>
+                    <div className="text-xs text-slate-500">Digital Services</div>
+                  </div>
                 </Link>
               </div>
-            </div>
-            
-            {/* Desktop Navigation - Responsive item display */}
-            <div className="hidden sm:flex flex-1 justify-center">
-              <div className="flex items-center space-x-0.5 lg:space-x-1 xl:space-x-2 max-w-full overflow-hidden">
-                {visibleNavItems.map((item) => (
-                  <Link 
-                    key={item.path}
-                    to={item.path}
-                    className="px-2 py-1.5 lg:px-3 lg:py-2 xl:px-4 rounded-lg text-xs lg:text-sm font-medium text-gray-300 hover:text-white hover:bg-purple-800/50 transition-all duration-200 hover:scale-105 flex items-center whitespace-nowrap"
-                  >
-                    <span className="mr-1 lg:mr-2 text-sm lg:text-lg">{item.icon}</span>
-                    <span className="hidden xs:inline">{item.label}</span>
-                  </Link>
-                ))}
-                
-                {/* More dropdown for hidden items */}
-                {screenSize !== 'large-desktop' && navItems.length > visibleNavItems.length && (
-                  <div className="relative group">
-                    <button className="px-2 py-1.5 lg:px-3 lg:py-2 rounded-lg text-xs lg:text-sm font-medium text-gray-300 hover:text-white hover:bg-purple-800/50 transition-all duration-200 flex items-center">
-                      <span className="mr-1 lg:mr-2">⋯</span>
-                      <span>More</span>
+
+              {/* Center: Category + Search (prominent) */}
+              <div className="flex-1 mx-6 hidden sm:flex items-center">
+                <form onSubmit={handleSearchSubmit} className="w-full">
+                  <div className="w-full flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                    <select className="appearance-none px-3 py-2 bg-transparent text-sm text-slate-700 border-r border-slate-200 outline-none">
+                      <option>All</option>
+                      <option>Design</option>
+                      <option>Marketing</option>
+                      <option>Development</option>
+                      <option>Writing</option>
+                    </select>
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      placeholder="Search for services, gigs, and more"
+                      className="flex-1 px-4 py-2 text-sm bg-transparent outline-none focus:ring-0"
+                      aria-label="Search"
+                    />
+                    <button type="submit" className="px-4 py-2 bg-gradient-to-r from-teal-500 to-purple-500 text-white text-sm font-medium hover:opacity-95">
+                      Search
                     </button>
-                    <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800/95 backdrop-blur-lg rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      {navItems.slice(visibleNavItems.length).map((item) => (
-                        <Link 
-                          key={item.path}
-                          to={item.path}
-                          className="block px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-purple-800/50 transition-all duration-200 first:rounded-t-lg last:rounded-b-lg flex items-center"
-                        >
-                          <span className="mr-3 text-lg">{item.icon}</span>
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
                   </div>
-                )}
+                </form>
               </div>
-            </div>
-            
-            {/* Auth Buttons - Responsive sizing */}
-            <div className="flex items-center space-x-1 sm:space-x-2">
-              {/* Desktop Auth Buttons */}
-              <div className="hidden sm:flex items-center space-x-1 lg:space-x-2">
-                {authItems.map((item) => (
-                  <Link 
-                    key={item.path}
-                    to={item.path}
-                    className={`px-2 py-1.5 lg:px-3 lg:py-2 xl:px-4 rounded-lg text-xs lg:text-sm font-medium bg-gradient-to-r ${item.gradient} text-white hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-teal-500/25 whitespace-nowrap`}
-                  >
-                    {item.label}
+
+              {/* Right: Actions (cart, notifications, auth) */}
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-3">
+                  <Link to="/services" className="relative inline-flex items-center p-2 rounded-md text-slate-600 hover:bg-slate-100 transition">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
+                    </svg>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-0.5 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold">{cartCount}</span>
+                    )}
                   </Link>
-                ))}
-              </div>
-              
-              {/* Mobile menu button */}
-              <button
-                id="mobile-menu-toggle"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="sm:hidden inline-flex items-center justify-center p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-purple-800/50 focus:outline-none transition-all duration-200"
-                aria-expanded="false"
-              >
-                <span className="sr-only">Open main menu</span>
-                <div className="w-5 h-5 relative">
-                  <span className={`absolute left-0 top-1 w-full h-0.5 bg-current transition-all duration-300 ${
-                    isMenuOpen ? 'rotate-45 top-2' : ''
-                  }`}></span>
-                  <span className={`absolute left-0 top-2 w-full h-0.5 bg-current transition-all duration-300 ${
-                    isMenuOpen ? 'opacity-0' : ''
-                  }`}></span>
-                  <span className={`absolute left-0 top-3 w-full h-0.5 bg-current transition-all duration-300 ${
-                    isMenuOpen ? '-rotate-45 top-2' : ''
-                  }`}></span>
+
+                  <Link to="/authform" className="px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-100 transition">Login</Link>
+                  <Link to="/profile" className="px-3 py-2 rounded-md text-sm font-medium bg-gradient-to-r from-teal-500 to-purple-500 text-white shadow-sm">Become Seller</Link>
                 </div>
-              </button>
+
+                {/* Mobile menu toggle */}
+                <button
+                  id="mobile-menu-toggle"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="sm:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-600 hover:bg-slate-100 transition"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'} />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Enhanced Mobile Navigation */}
-        <div className={`sm:hidden transition-all duration-300 overflow-hidden ${
-          isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-        }`}>
-          <div className="px-3 pt-2 pb-4 space-y-1 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800">
-            {[...navItems, ...authItems].map((item) => (
-              <Link 
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsMenuOpen(false)}
-                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${
-                  authItems.some(authItem => authItem.path === item.path) 
-                    ? `bg-gradient-to-r ${item.gradient} text-white` 
-                    : 'text-gray-300 hover:text-white hover:bg-purple-800/50'
-                }`}
-              >
-                <span className="mr-3 text-lg">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+          {/* Mobile expanded menu */}
+          <div className={`sm:hidden transition-all duration-200 ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+            <div className="px-4 pt-3 pb-4 space-y-2 bg-white border-t border-slate-200">
+              <form onSubmit={handleSearchSubmit} className="mb-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Search services"
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-md text-sm outline-none"
+                  />
+                  <button type="submit" className="px-3 py-2 bg-teal-500 text-white rounded-md text-sm">Go</button>
+                </div>
+              </form>
+              {[...navItems, ...authItems].map((item) => (
+                <Link key={item.path} to={item.path} onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="font-medium">{item.label}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </nav>
 
-      {/* Sidebar Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black z-40 transition-opacity duration-300 ${
-          isSidebarOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setIsSidebarOpen(false)}
-      ></div>
+      {/* Sidebar Overlay and Sidebar (kept but styled lighter) */}
+      <div className={`fixed inset-0 bg-black z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-40' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)} />
 
-      {/* Enhanced Responsive Sidebar */}
-      <div 
-        id="sidebar"
-        className={`fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-slate-900/95 backdrop-blur-lg shadow-2xl z-50 transform transition-transform duration-300 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Sidebar Header */}
-        <div className="p-4 sm:p-6 border-b border-slate-800">
-          <div className="flex items-center justify-between">
-            <Link 
-              to="/" 
-              className="text-xl sm:text-2xl font-bold text-white"
-              onClick={handleSidebarLinkClick}
-            >
-              <span className="bg-gradient-to-r from-teal-400 to-purple-400 bg-clip-text text-transparent">
-                MDK Agency
-              </span>
+      <aside id="sidebar" className={`fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-white z-50 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <div className="text-lg font-bold text-slate-800">MDK Agency</div>
+            <div className="text-sm text-slate-500">Explore categories</div>
+          </div>
+          <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-md text-slate-600 hover:bg-slate-50">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-4 space-y-1 overflow-y-auto h-[calc(100%-160px)]">
+          {navItems.map((item) => (
+            <Link key={item.path} to={item.path} onClick={handleSidebarLinkClick} className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50 text-slate-700">
+              <span className="text-lg">{item.icon}</span>
+              <span className="font-medium">{item.label}</span>
             </Link>
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-purple-800/50 transition-all duration-200"
-              aria-label="Close sidebar"
-            >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          ))}
         </div>
 
-        {/* Scrollable Sidebar Content */}
-        <div className="h-[calc(100%-200px)] overflow-y-auto">
-          <div className="p-4 space-y-1">
-            {navItems.map((item) => (
-              <Link 
-                key={item.path}
-                to={item.path}
-                onClick={handleSidebarLinkClick}
-                className="flex items-center px-4 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-purple-800/50 transition-all duration-200 group"
-              >
-                <span className="text-lg mr-3 group-hover:scale-110 transition-transform duration-200">
-                  {item.icon}
-                </span>
-                <span className="font-medium text-sm sm:text-base">{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Sidebar Auth Section */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800 bg-slate-900/95">
-          <div className="space-y-2">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100">
+          <div className="flex gap-2">
             {authItems.map((item) => (
-              <Link 
-                key={item.path}
-                to={item.path}
-                onClick={handleSidebarLinkClick}
-                className={`flex items-center justify-center px-4 py-3 rounded-lg bg-gradient-to-r ${item.gradient} text-white font-medium hover:scale-105 transition-all duration-200 text-sm sm:text-base`}
-              >
-                <span className="mr-2">{item.icon}</span>
+              <Link key={item.path} to={item.path} onClick={handleSidebarLinkClick} className="flex-1 text-center px-3 py-2 rounded-md bg-gradient-to-r from-teal-500 to-purple-500 text-white font-medium">
                 {item.label}
               </Link>
             ))}
           </div>
         </div>
-      </div>
+      </aside>
 
-      {/* Scroll Progress Indicator */}
+      {/* Scroll progress */}
       <div className="fixed top-0 left-0 w-full h-1 z-50">
-        <div 
-          className="h-full bg-gradient-to-r from-teal-400 to-purple-400 transition-all duration-300 ease-out"
-          style={{
-            width: `${Math.min((lastScrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100, 100)}%`
-          }}
-        ></div>
+        <div className="h-full bg-gradient-to-r from-teal-400 to-purple-500 transition-all duration-300" style={{ width: `${Math.min((lastScrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100, 100)}%` }} />
       </div>
     </div>
   );

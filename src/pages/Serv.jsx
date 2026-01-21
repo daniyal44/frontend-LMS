@@ -324,12 +324,20 @@ export default function Services() {
   }
 
   function addToCart(service) {
-    setCart(prev => [...prev, service]);
+    setCart(prev => {
+      const next = [...prev, service];
+      try { localStorage.setItem('mdk_cart', JSON.stringify(next)); } catch(e){}
+      return next;
+    });
     pushToast(`${service.title} added to order`, "success");
   }
 
   function removeFromCart(index) {
-    setCart(prev => prev.filter((_, i) => i !== index));
+    setCart(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      try { localStorage.setItem('mdk_cart', JSON.stringify(next)); } catch(e){}
+      return next;
+    });
   }
 
   function placeOrder() {
@@ -388,13 +396,39 @@ export default function Services() {
     setSelectedService(service);
   }
 
+  function openReviewForm() {
+    // Scroll to review form inside the modal and focus the name input
+    setTimeout(() => {
+      const el = document.getElementById('review-form');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = el.querySelector('input');
+        if (input) input.focus();
+      }
+    }, 100);
+  }
+
   function leaveReview(serviceId, name, rating, text) {
     setReviews(prev => {
       const list = prev[serviceId] ? [...prev[serviceId]] : [];
       list.unshift({ name, rating, text, date: new Date().toISOString() });
-      return { ...prev, [serviceId]: list };
+      const next = { ...prev, [serviceId]: list };
+      try { localStorage.setItem('mdk_reviews', JSON.stringify(next)); } catch(e){}
+      return next;
     });
   }
+
+  // Load persisted cart and reviews from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('mdk_cart');
+      if (stored) setCart(JSON.parse(stored));
+    } catch (e) {}
+    try {
+      const rev = localStorage.getItem('mdk_reviews');
+      if (rev) setReviews(JSON.parse(rev));
+    } catch (e) {}
+  }, []);
 
   function renderStars(rating) {
     if (!rating || rating <= 0) return <span className="text-sm text-slate-400">No ratings</span>;
@@ -409,116 +443,50 @@ export default function Services() {
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 text-slate-900 pt-20 p-6">
+      <div className="min-h-screen bg-gray-50 text-slate-900 pt-24 p-6">
 
         <header className="max-w-7xl mx-auto mb-8">
+          <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-1">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900">MDK Services Marketplace</h1>
+              <p className="mt-2 text-sm text-gray-600">Professional services — trusted providers, upfront pricing, secure checkout.</p>
+              <div className="mt-4 flex gap-3 items-center">
+                <div className="relative flex-1">
+                  <input
+                    value={query}
+                    onChange={handleSearchChange}
+                    placeholder="Search services, e.g. logo design, SEO, landing page..."
+                    className="w-full p-4 pr-12 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm"
+                  />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-lg">🔎</button>
+                </div>
 
-          <div className="text-center mb-8">
-
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Professional Services Marketplace
-            </h1>
-            <p className="mt-3 text-lg text-slate-600">Discover 100+ professional services with secure payments and global support</p>
-          </div>
-
-          {/* Enhanced Search and Filters */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg mb-6">
-            <div className="grid md:grid-cols-4 gap-4 mb-4">
-              <div className="relative">
-                <input
-                  value={query}
-                  onChange={handleSearchChange}
-                  placeholder="Search services, keywords, categories..."
-                  className="w-full p-3 pr-10 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-                <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
-                  🔍
-                </button>
+                <button
+                  onClick={() => { setQuery(''); setSelectedCategory('all'); setMinRating(0); setMaxPrice(1000); pushToast('Filters reset', 'info'); }}
+                  className="px-4 py-3 bg-gray-100 border rounded-lg text-sm hover:bg-gray-200"
+                >Reset</button>
               </div>
 
-              <select
-                value={selectedCategory}
-                onChange={e => setSelectedCategory(e.target.value)}
-                className="p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="all">All Categories</option>
-                {Object.keys(serviceCategories).map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)} ({serviceCategories[cat].length})
-                  </option>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {Object.keys(serviceCategories).slice(0,6).map(cat => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${selectedCategory===cat? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    {cat.charAt(0).toUpperCase()+cat.slice(1)}
+                  </button>
                 ))}
-
-              </select>
-
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-                className="p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="popular">Most Popular</option>
-                <option value="rating">Highest Rated</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-              </select>
-
-              <div className="flex gap-2">
-                <select
-                  value={selectedCurrency}
-                  onChange={e => setSelectedCurrency(e.target.value)}
-                  className="flex-1 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-500"
-                >
-                  {currencies.map(currency => (
-                    <option key={currency.code} value={currency.code}>
-                      {currency.code} ({currency.symbol})
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedCountry}
-                  onChange={e => setSelectedCountry(e.target.value)}
-                  className="flex-1 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-500"
-                >
-                  {countries.map(country => (
-                    <option key={country.code} value={country.code}>
-                      {country.flag} {country.code}
-                    </option>
-                  ))}
-                </select>
+                <span className="text-xs text-gray-500 ml-2">{filteredServices.length} results</span>
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Minimum Rating: {minRating}+</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="5"
-                  step="0.5"
-                  value={minRating}
-                  onChange={e => setMinRating(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Max Price: {getCurrencySymbol()}{convertPrice(maxPrice, "USD", selectedCurrency)}</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1000"
-                  step="10"
-                  value={maxPrice}
-                  onChange={e => setMaxPrice(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="flex items-center justify-end">
-                <span className="text-sm text-gray-600">
-                  Showing {filteredServices.length} of {services.length} services
-                </span>
+            <div className="w-full md:w-80">
+              <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-amber-700 font-semibold">Trusted Sellers</div>
+                    <div className="text-xs text-amber-700/80">Verified professionals</div>
+                  </div>
+                  <div className="text-2xl">🔰</div>
+                </div>
+                <div className="mt-3 text-xs text-gray-700">Secure payments · Money-back guarantee · 24/7 support</div>
               </div>
             </div>
           </div>
@@ -552,81 +520,59 @@ export default function Services() {
                   ) : (
                     <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredServices.map(service => (
-                      <article key={service.id} className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden border border-gray-100 group">
-                      {/* Image Container */}
-                      <div className="relative h-48 overflow-hidden bg-gray-200">
-                        <ImageWithFallback
-                        src={service.img}
-                        alt={service.title}
-                        googleQuery={`${service.title} ${service.desc || ''}`}
-                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        
-                        {/* Price Badge */}
-                        <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-teal-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg">
-                        {getCurrencySymbol()}{convertPrice(service.price, "USD", selectedCurrency)}
+                      <article key={service.id} className="bg-white rounded-lg shadow-sm border border-gray-100 flex overflow-hidden group">
+                        <div className="w-36 h-36 bg-gray-100 flex-shrink-0 overflow-hidden">
+                          <ImageWithFallback
+                            src={service.img}
+                            alt={service.title}
+                            googleQuery={`${service.title} ${service.desc || ''}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
                         </div>
 
-                        {/* Popular Badge */}
-                        {service.reviews > 70 && (
-                        <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                          ⭐ Popular
-                        </div>
-                        )}
-                      </div>
+                        <div className="flex-1 p-4 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{service.title}</h3>
+                                <button onClick={() => openServiceDetail(service)} className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100">Service</button>
+                              </div>
+                              <div className="text-xs text-gray-500">{Object.keys(serviceCategories).find(cat => serviceCategories[cat].includes(service))}</div>
+                            </div>
 
-                      {/* Content */}
-                      <div className="p-5">
-                        <div className="flex justify-between items-start mb-3 gap-2">
-                        <h3 className="text-lg font-bold text-gray-900 flex-1 line-clamp-2">{service.title}</h3>
-                        <span className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 text-xs px-2.5 py-1 rounded-full font-semibold whitespace-nowrap">
-                          {Object.keys(serviceCategories).find(cat =>
-                          serviceCategories[cat].includes(service)
-                          )}
-                        </span>
-                        </div>
+                            <p className="mt-2 text-xs text-gray-600 line-clamp-2">{service.desc}</p>
 
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{service.desc}</p>
+                            <div className="mt-3 flex items-center gap-3">
+                              <div className="flex items-center gap-1 text-amber-500">{renderStars(service.rating)}</div>
+                              <div className="text-xs text-gray-600">{service.rating} • {service.reviews} reviews</div>
+                            </div>
 
-                        {/* Rating & Reviews */}
-                        <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
-                        <div className="flex items-center gap-1.5">
-                          {renderStars(service.rating)}
-                          <span className="text-sm font-semibold text-gray-900">{service.rating}</span>
-                        </div>
-                        <span className="text-sm text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
-                          {service.reviews} reviews
-                        </span>
-                        </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                              <div className="bg-gray-50 p-2 rounded-md">Delivery <div className="font-semibold text-sm text-gray-900">3–5 days</div></div>
+                              <div className="bg-gray-50 p-2 rounded-md">Support <div className="font-semibold text-sm text-gray-900">24/7</div></div>
+                            </div>
+                          </div>
 
-                        {/* Info Grid */}
-                        <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-                        <div className="bg-blue-50 p-2 rounded-lg">
-                          <div className="text-gray-600">Delivery</div>
-                          <div className="font-semibold text-gray-900">3-5 days</div>
-                        </div>
-                        <div className="bg-purple-50 p-2 rounded-lg">
-                          <div className="text-gray-600">Support</div>
-                          <div className="font-semibold text-gray-900">24/7</div>
-                        </div>
+                          <div className="mt-4 text-xs text-gray-500">Seller: <span className="inline-flex items-center gap-2 text-gray-900 font-medium">Verified
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="inline-block">
+                                <circle cx="12" cy="12" r="12" fill="#0ea5e9" />
+                                <path d="M6 12.5l3 3 9-9" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </span></div>
                         </div>
 
-                        {/* Buttons */}
-                        <div className="flex gap-2">
-                        <button
-                          onClick={() => openServiceDetail(service)}
-                          className="flex-1 px-3 py-2.5 text-sm border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-purple-400 transition-all font-medium"
-                        >
-                          📋 Details
-                        </button>
-                        <button
-                          onClick={() => addToCart(service)}
-                          className="flex-1 px-3 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg"
-                        >
-                          🛒 Order
-                        </button>
+                        <div className="w-40 p-4 border-l border-gray-100 flex flex-col items-end justify-between bg-gradient-to-b from-white to-gray-50">
+                          <div className="text-right">
+                            <div className="text-xs text-gray-500">Price</div>
+                            <div className="text-lg font-extrabold text-amber-600">{getCurrencySymbol()}{convertPrice(service.price, "USD", selectedCurrency)}</div>
+                            {service.reviews > 70 && <div className="mt-2 inline-block bg-red-100 text-red-700 text-xs px-2 py-1 rounded">Popular</div>}
+                          </div>
+
+                          <div className="w-full">
+                            <button onClick={() => { addToCart(service); pushToast('Added to cart', 'success'); }} className="w-full mb-2 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-semibold text-sm">Add to Cart</button>
+                            <button onClick={() => { addToCart(service); navigate('/billing'); }} className="w-full py-2 border border-amber-300 text-amber-700 rounded-md text-sm">Buy Now</button>
+                          </div>
                         </div>
-                      </div>
                       </article>
                     ))}
                     </div>
@@ -636,7 +582,7 @@ export default function Services() {
                   {/* Enhanced Sidebar */}
                   <aside className="lg:col-span-1 space-y-6 sticky top-24 h-fit">
                   {/* Shopping Cart */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-gray-100">
+                  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
                     <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-900">
                     🛒 Your Order
                     {cart.length > 0 && (
@@ -710,7 +656,7 @@ export default function Services() {
 
                       <button
                         onClick={placeOrder}
-                        className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 text-white py-3.5 rounded-lg hover:from-green-600 hover:via-emerald-600 hover:to-teal-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:scale-105"
+                        className="w-full bg-amber-500 text-white py-3.5 rounded-lg hover:bg-amber-600 transition-all font-bold shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                       >
                         💳 Proceed to Checkout
                       </button>
@@ -731,9 +677,9 @@ export default function Services() {
                     <h4 className="font-bold mb-4 text-gray-900">💳 Accepted Payments</h4>
                     <div className="grid grid-cols-4 gap-2">
                     {paymentMethods.map(method => (
-                      <div key={method.id} className="text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg hover:shadow-md transition-all border border-gray-200 hover:border-purple-300">
-                      <div className="text-2xl mb-1.5">{method.icon}</div>
-                      <div className="text-xs font-semibold text-gray-700">{method.name}</div>
+                      <div key={method.id} className="flex flex-col items-center gap-1 p-3 rounded-md border bg-white hover:shadow-sm transition-all">
+                        <div className="text-2xl mb-1.5">{method.icon}</div>
+                        <div className="text-xs font-semibold text-gray-700">{method.name}</div>
                       </div>
                     ))}
                     </div>
@@ -857,7 +803,7 @@ export default function Services() {
                     </button>
                     <button
                       onClick={confirmPayment}
-                      className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:from-green-600 hover:to-teal-700 transition-all font-semibold"
+                      className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold"
                     >
                       Confirm Payment
                     </button>
@@ -915,18 +861,43 @@ export default function Services() {
                         )}
                       </span>
                     </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="font-medium">Seller:</span>
+                      <span className="inline-flex items-center gap-2 text-gray-900 font-medium">
+                        Verified
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="inline-block">
+                          <circle cx="12" cy="12" r="12" fill="#0ea5e9" />
+                          <path d="M6 12.5l3 3 9-9" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      addToCart(selectedService);
-                      setSelectedService(null);
-                    }}
-                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all font-semibold mb-4"
-                  >
-                    Add to Cart - {getCurrencySymbol()}
-                    {convertPrice(selectedService.price, "USD", selectedCurrency)}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        addToCart(selectedService);
+                        pushToast('Added to cart', 'success');
+                      }}
+                      className="flex-1 bg-amber-500 text-white py-3 rounded-lg hover:bg-amber-600 transition-all font-semibold"
+                    >
+                      Add to Cart - {getCurrencySymbol()}{convertPrice(selectedService.price, "USD", selectedCurrency)}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        addToCart(selectedService);
+                        setShowCheckout(true);
+                      }}
+                      className="flex-1 border border-amber-300 text-amber-700 py-3 rounded-lg hover:bg-amber-50 transition-all font-semibold"
+                    >
+                      Place Order
+                    </button>
+                  </div>
+
+                  <div className="mt-3">
+                    <button onClick={openReviewForm} className="w-full py-2 text-sm text-gray-700 hover:underline">✍️ Write a review</button>
+                  </div>
                 </div>
               </div>
 
@@ -934,6 +905,7 @@ export default function Services() {
               <div className="mt-6">
                 <h4 className="font-semibold mb-4">Customer Reviews</h4>
                 <ReviewForm
+                  id="review-form"
                   onSubmit={(name, rating, text) => {
                     leaveReview(selectedService.id, name, rating, text);
                     pushToast('Thanks for your review!', 'success');
@@ -973,7 +945,7 @@ export default function Services() {
         {/* Toast container */}
         <div aria-live="polite" className="fixed bottom-6 right-6 z-50 space-y-2">
           {toasts.map(t => (
-            <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm ${t.type === 'success' ? 'bg-green-500 text-white' : t.type === 'warning' ? 'bg-yellow-400 text-black' : 'bg-gray-800 text-white'}`}>
+            <div key={t.id} className={`px-5 py-2 rounded-full shadow-md text-sm ${t.type === 'success' ? 'bg-green-500 text-white' : t.type === 'warning' ? 'bg-yellow-400 text-black' : 'bg-gray-800 text-white'}`}>
               {t.message}
             </div>
           ))}
@@ -984,7 +956,7 @@ export default function Services() {
 }
 
 // ReviewForm Component
-function ReviewForm({ onSubmit }) {
+function ReviewForm({ onSubmit, id }) {
   const [name, setName] = useState("");
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
@@ -1001,7 +973,7 @@ function ReviewForm({ onSubmit }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg">
+    <form id={id || 'review-form'} onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg">
       <h5 className="font-medium mb-3">Write a Review</h5>
       <div className="space-y-3">
         <input
